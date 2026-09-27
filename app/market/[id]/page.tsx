@@ -42,6 +42,10 @@ export default function MarketPage() {
     YES: 0,
     NO: 0,
   })
+  const [prices, setPrices] = useState({
+    YES: market?.yes ?? 50,
+    NO: market?.no ?? 50,
+  })
   const [message, setMessage] = useState("")
 
   if (!market) {
@@ -72,21 +76,42 @@ export default function MarketPage() {
       return
     }
 
+    const priceChange = Math.min(
+      8,
+      Math.max(1, Math.round(points / 50))
+    )
+
     setBalance((current) => current - points)
 
     setPosition((current) => ({
       ...current,
-      [selectedSide]: current[selectedSide] + points,
+      [selectedSide]:
+        current[selectedSide] + points,
     }))
+
+    setPrices((current) => {
+      const direction =
+        selectedSide === "YES" ? 1 : -1
+
+      const newYes = Math.max(
+        5,
+        Math.min(
+          95,
+          current.YES + direction * priceChange
+        )
+      )
+
+      return {
+        YES: newYes,
+        NO: 100 - newYes,
+      }
+    })
 
     setAmount("")
     setMessage(
       `You placed ${points} points on ${selectedSide}.`
     )
   }
-
-  const selectedProbability =
-    selectedSide === "YES" ? market.yes : market.no
 
   return (
     <main className="detail-page">
@@ -118,37 +143,49 @@ export default function MarketPage() {
             <div className="probability-row">
               <div>
                 <span>YES</span>
-                <strong>{market.yes}%</strong>
+                <strong>{prices.YES}%</strong>
               </div>
 
               <div>
                 <span>NO</span>
-                <strong>{market.no}%</strong>
+                <strong>{prices.NO}%</strong>
               </div>
             </div>
 
             <div className="probability-bar">
-              <div style={{ width: `${market.yes}%` }} />
+              <div
+                style={{
+                  width: `${prices.YES}%`,
+                }}
+              />
             </div>
           </div>
 
           <div className="positions">
-            <p className="eyebrow">YOUR POSITIONS</p>
+            <p className="eyebrow">
+              YOUR POSITIONS
+            </p>
 
             <div className="position-row">
               <span>YES</span>
-              <strong>{position.YES} pts</strong>
+              <strong>
+                {position.YES} pts
+              </strong>
             </div>
 
             <div className="position-row">
               <span>NO</span>
-              <strong>{position.NO} pts</strong>
+              <strong>
+                {position.NO} pts
+              </strong>
             </div>
           </div>
         </div>
 
         <aside className="trade-panel">
-          <p className="eyebrow">MAKE YOUR GUESS</p>
+          <p className="eyebrow">
+            MAKE YOUR GUESS
+          </p>
 
           <h2>Where do you stand?</h2>
 
@@ -160,7 +197,9 @@ export default function MarketPage() {
           <div className="trade-options">
             <button
               className={`trade-option ${
-                selectedSide === "YES" ? "selected" : ""
+                selectedSide === "YES"
+                  ? "selected"
+                  : ""
               }`}
               onClick={() => {
                 setSelectedSide("YES")
@@ -168,12 +207,14 @@ export default function MarketPage() {
               }}
             >
               <span>YES</span>
-              <strong>{market.yes}%</strong>
+              <strong>{prices.YES}%</strong>
             </button>
 
             <button
               className={`trade-option ${
-                selectedSide === "NO" ? "selected" : ""
+                selectedSide === "NO"
+                  ? "selected"
+                  : ""
               }`}
               onClick={() => {
                 setSelectedSide("NO")
@@ -181,7 +222,7 @@ export default function MarketPage() {
               }}
             >
               <span>NO</span>
-              <strong>{market.no}%</strong>
+              <strong>{prices.NO}%</strong>
             </button>
           </div>
 
@@ -207,11 +248,15 @@ export default function MarketPage() {
             <strong>{selectedSide}</strong>
 
             <span>Current probability</span>
-            <strong>{selectedProbability}%</strong>
+            <strong>
+              {prices[selectedSide]}%
+            </strong>
 
             <span>Amount</span>
             <strong>
-              {amount ? `${amount} pts` : "—"}
+              {amount
+                ? `${amount} pts`
+                : "—"}
             </strong>
           </div>
 
@@ -229,8 +274,8 @@ export default function MarketPage() {
           )}
 
           <p className="trade-note">
-            Guessy uses virtual points. No real money is
-            involved.
+            Guessy uses virtual points. No real
+            money is involved.
           </p>
         </aside>
       </section>
