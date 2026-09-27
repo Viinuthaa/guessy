@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useState } from "react"
 
 const markets = [
   {
@@ -34,6 +35,15 @@ export default function MarketPage() {
   const params = useParams()
   const market = markets.find((item) => item.id === params.id)
 
+  const [balance, setBalance] = useState(1000)
+  const [selectedSide, setSelectedSide] = useState<"YES" | "NO">("YES")
+  const [amount, setAmount] = useState("")
+  const [position, setPosition] = useState({
+    YES: 0,
+    NO: 0,
+  })
+  const [message, setMessage] = useState("")
+
   if (!market) {
     return (
       <main className="detail-page">
@@ -48,6 +58,35 @@ export default function MarketPage() {
       </main>
     )
   }
+
+  function placeTrade() {
+    const points = Number(amount)
+
+    if (!points || points <= 0) {
+      setMessage("Enter a valid amount.")
+      return
+    }
+
+    if (points > balance) {
+      setMessage("You don't have enough points.")
+      return
+    }
+
+    setBalance((current) => current - points)
+
+    setPosition((current) => ({
+      ...current,
+      [selectedSide]: current[selectedSide] + points,
+    }))
+
+    setAmount("")
+    setMessage(
+      `You placed ${points} points on ${selectedSide}.`
+    )
+  }
+
+  const selectedProbability =
+    selectedSide === "YES" ? market.yes : market.no
 
   return (
     <main className="detail-page">
@@ -92,6 +131,20 @@ export default function MarketPage() {
               <div style={{ width: `${market.yes}%` }} />
             </div>
           </div>
+
+          <div className="positions">
+            <p className="eyebrow">YOUR POSITIONS</p>
+
+            <div className="position-row">
+              <span>YES</span>
+              <strong>{position.YES} pts</strong>
+            </div>
+
+            <div className="position-row">
+              <span>NO</span>
+              <strong>{position.NO} pts</strong>
+            </div>
+          </div>
         </div>
 
         <aside className="trade-panel">
@@ -101,24 +154,83 @@ export default function MarketPage() {
 
           <div className="balance">
             <span>Your balance</span>
-            <strong>1,000 pts</strong>
+            <strong>{balance} pts</strong>
           </div>
 
           <div className="trade-options">
-            <button className="trade-option">
+            <button
+              className={`trade-option ${
+                selectedSide === "YES" ? "selected" : ""
+              }`}
+              onClick={() => {
+                setSelectedSide("YES")
+                setMessage("")
+              }}
+            >
               <span>YES</span>
               <strong>{market.yes}%</strong>
             </button>
 
-            <button className="trade-option">
+            <button
+              className={`trade-option ${
+                selectedSide === "NO" ? "selected" : ""
+              }`}
+              onClick={() => {
+                setSelectedSide("NO")
+                setMessage("")
+              }}
+            >
               <span>NO</span>
               <strong>{market.no}%</strong>
             </button>
           </div>
 
+          <label className="amount-label">
+            Points
+
+            <input
+              className="amount-input"
+              type="number"
+              min="1"
+              max={balance}
+              placeholder="100"
+              value={amount}
+              onChange={(event) => {
+                setAmount(event.target.value)
+                setMessage("")
+              }}
+            />
+          </label>
+
+          <div className="trade-summary">
+            <span>Selected</span>
+            <strong>{selectedSide}</strong>
+
+            <span>Current probability</span>
+            <strong>{selectedProbability}%</strong>
+
+            <span>Amount</span>
+            <strong>
+              {amount ? `${amount} pts` : "—"}
+            </strong>
+          </div>
+
+          <button
+            className="primary-button trade-button"
+            onClick={placeTrade}
+          >
+            Place trade
+          </button>
+
+          {message && (
+            <p className="trade-message">
+              {message}
+            </p>
+          )}
+
           <p className="trade-note">
-            Trading with virtual points. Your position will
-            appear here once trading is enabled.
+            Guessy uses virtual points. No real money is
+            involved.
           </p>
         </aside>
       </section>

@@ -419,6 +419,25 @@ button {
   background: #191918;
 }
 
+.positions {
+  max-width: 700px;
+  margin-top: 70px;
+  border-top: 1px solid #dcdad2;
+}
+
+.position-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #dcdad2;
+  font-size: 13px;
+}
+
+.position-row span {
+  color: #77766f;
+  font-weight: 700;
+}
+
 .trade-panel {
   align-self: start;
   border-top: 1px solid #191918;
@@ -460,8 +479,10 @@ button {
   text-align: left;
 }
 
-.trade-option:hover {
+.trade-option:hover,
+.trade-option.selected {
   border-color: #191918;
+  background: #efeee8;
 }
 
 .trade-option span {
@@ -475,6 +496,61 @@ button {
 
 .trade-option strong {
   font-size: 24px;
+}
+
+.amount-label {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  color: #77766f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.amount-input {
+  width: 100%;
+  border: 1px solid #dcdad2;
+  border-radius: 7px;
+  padding: 13px;
+  outline: none;
+  background: #faf9f5;
+  color: #191918;
+  font-size: 14px;
+}
+
+.amount-input:focus {
+  border-color: #85847d;
+}
+
+.trade-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 16px 0;
+  border-top: 1px solid #dcdad2;
+  border-bottom: 1px solid #dcdad2;
+  font-size: 12px;
+}
+
+.trade-summary span {
+  color: #85847d;
+}
+
+.trade-summary strong {
+  font-size: 12px;
+}
+
+.trade-button {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.trade-message {
+  margin: 14px 0 0;
+  color: #4f4e49;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .trade-note {
