@@ -14,6 +14,8 @@ body {
 }
 
 button,
+input,
+textarea,
 a {
   font: inherit;
 }
@@ -21,6 +23,10 @@ a {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+button {
+  cursor: pointer;
 }
 
 .navbar {
@@ -40,6 +46,7 @@ a {
 
 .navbar nav {
   display: flex;
+  align-items: center;
   gap: 32px;
   font-size: 15px;
   font-weight: 600;
@@ -52,6 +59,21 @@ a {
 
 .navbar nav a:hover {
   color: #191918;
+}
+
+.nav-button {
+  border: 1px solid #191918;
+  border-radius: 7px;
+  padding: 9px 13px;
+  background: transparent;
+  color: #191918;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav-button:hover {
+  background: #191918;
+  color: #fff;
 }
 
 .hero {
@@ -96,16 +118,23 @@ a {
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .primary-button:hover {
   background: #33332f;
 }
 
+.create-section,
 .markets {
   width: min(1120px, calc(100% - 40px));
   margin: auto;
+}
+
+.create-section {
+  padding-bottom: 90px;
+}
+
+.markets {
   padding-bottom: 105px;
 }
 
@@ -126,9 +155,57 @@ a {
   letter-spacing: -1.5px;
 }
 
-.market-count {
-  color: #85847d;
+.close-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #77766f;
   font-size: 13px;
+  font-weight: 600;
+}
+
+.close-button:hover {
+  color: #191918;
+}
+
+.market-form {
+  max-width: 700px;
+  display: grid;
+  gap: 20px;
+}
+
+.market-form label {
+  display: grid;
+  gap: 8px;
+  color: #4f4e49;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.market-form input,
+.market-form textarea {
+  width: 100%;
+  border: 1px solid #dcdad2;
+  border-radius: 7px;
+  padding: 13px 14px;
+  outline: none;
+  background: #faf9f5;
+  color: #191918;
+  font-size: 14px;
+}
+
+.market-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.market-form input:focus,
+.market-form textarea:focus {
+  border-color: #85847d;
+}
+
+.market-form .primary-button {
+  width: fit-content;
 }
 
 .market-list {
@@ -146,16 +223,28 @@ a {
 }
 
 .market-question {
-  margin: 0 0 9px;
+  margin: 0 0 8px;
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.4px;
+}
+
+.market-description {
+  margin: 0 0 9px;
+  color: #77766f;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .closing {
   margin: 0;
   color: #85847d;
   font-size: 12px;
+}
+
+.market-count {
+  color: #85847d;
+  font-size: 13px;
 }
 
 .odds {
@@ -184,6 +273,10 @@ a {
   .navbar nav {
     gap: 18px;
     font-size: 13px;
+  }
+
+  .navbar {
+    align-items: flex-start;
   }
 
   .hero {
