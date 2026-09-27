@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, useMemo, useState } from "react"
 
 type Market = {
   question: string
@@ -37,9 +37,30 @@ const initialMarkets: Market[] = [
 export default function Home() {
   const [markets, setMarkets] = useState(initialMarkets)
   const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState("")
+  const [filter, setFilter] = useState("All")
   const [question, setQuestion] = useState("")
   const [description, setDescription] = useState("")
   const [closes, setCloses] = useState("")
+
+  const filteredMarkets = useMemo(() => {
+    return markets.filter((market) => {
+      const matchesSearch =
+        market.question
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        market.description
+          .toLowerCase()
+          .includes(search.toLowerCase())
+
+      const matchesFilter =
+        filter === "All" ||
+        (filter === "High confidence" && Math.max(market.yes, market.no) >= 60) ||
+        (filter === "Close calls" && Math.max(market.yes, market.no) < 60)
+
+      return matchesSearch && matchesFilter
+    })
+  }, [markets, search, filter])
 
   function createMarket(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -164,45 +185,76 @@ export default function Home() {
       <section className="markets" id="markets">
         <div className="section-header">
           <div>
-            <p className="eyebrow">RIGHT NOW</p>
+            <p className="eyebrow">EXPLORE</p>
             <h2>Live markets</h2>
           </div>
 
           <span className="market-count">
-            {markets.length} markets
+            {filteredMarkets.length} of {markets.length}
           </span>
         </div>
 
+        <div className="market-controls">
+          <input
+            className="search-input"
+            type="search"
+            placeholder="Search markets..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <div className="filter-group">
+            {["All", "High confidence", "Close calls"].map((option) => (
+              <button
+                key={option}
+                className={`filter-button ${
+                  filter === option ? "active" : ""
+                }`}
+                onClick={() => setFilter(option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="market-list">
-          {markets.map((market) => (
-            <article className="market-card" key={market.question}>
-              <div>
-                <p className="market-question">
-                  {market.question}
-                </p>
-
-                <p className="market-description">
-                  {market.description}
-                </p>
-
-                <p className="closing">
-                  Closes {market.closes}
-                </p>
-              </div>
-
-              <div className="odds">
+          {filteredMarkets.length > 0 ? (
+            filteredMarkets.map((market) => (
+              <article className="market-card" key={market.question}>
                 <div>
-                  <span>YES</span>
-                  <strong>{market.yes}%</strong>
+                  <p className="market-question">
+                    {market.question}
+                  </p>
+
+                  <p className="market-description">
+                    {market.description}
+                  </p>
+
+                  <p className="closing">
+                    Closes {market.closes}
+                  </p>
                 </div>
 
-                <div>
-                  <span>NO</span>
-                  <strong>{market.no}%</strong>
+                <div className="odds">
+                  <div>
+                    <span>YES</span>
+                    <strong>{market.yes}%</strong>
+                  </div>
+
+                  <div>
+                    <span>NO</span>
+                    <strong>{market.no}%</strong>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">
+              <p>No markets found.</p>
+              <span>Try a different search or filter.</span>
+            </div>
+          )}
         </div>
       </section>
     </main>
