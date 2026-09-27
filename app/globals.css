@@ -1,0 +1,204 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #f5f4ef;
+  color: #191918;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.navbar {
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding: 28px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -1.4px;
+}
+
+.navbar nav {
+  display: flex;
+  gap: 32px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.navbar nav a {
+  color: #4f4e49;
+  transition: color 0.2s ease;
+}
+
+.navbar nav a:hover {
+  color: #191918;
+}
+
+.hero {
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding: 90px 0 105px;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  color: #77766f;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+}
+
+.hero h1 {
+  max-width: 800px;
+  margin: 0;
+  font-size: clamp(54px, 8vw, 92px);
+  line-height: 0.96;
+  letter-spacing: -5px;
+}
+
+.hero h1 span {
+  color: #85847d;
+}
+
+.hero-text {
+  max-width: 510px;
+  margin: 28px 0;
+  color: #77766f;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.primary-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 13px 19px;
+  background: #191918;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: #33332f;
+}
+
+.markets {
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding-bottom: 105px;
+}
+
+.section-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.section-header .eyebrow {
+  margin-bottom: 8px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -1.5px;
+}
+
+.market-count {
+  color: #85847d;
+  font-size: 13px;
+}
+
+.market-list {
+  border-top: 1px solid #dcdad2;
+}
+
+.market-card {
+  min-height: 120px;
+  padding: 26px 4px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 30px;
+  align-items: center;
+  border-bottom: 1px solid #dcdad2;
+}
+
+.market-question {
+  margin: 0 0 9px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.closing {
+  margin: 0;
+  color: #85847d;
+  font-size: 12px;
+}
+
+.odds {
+  display: flex;
+  gap: 34px;
+}
+
+.odds div {
+  min-width: 55px;
+}
+
+.odds span {
+  display: block;
+  margin-bottom: 5px;
+  color: #85847d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.odds strong {
+  font-size: 22px;
+}
+
+@media (max-width: 650px) {
+  .navbar nav {
+    gap: 18px;
+    font-size: 13px;
+  }
+
+  .hero {
+    padding: 65px 0 80px;
+  }
+
+  .hero h1 {
+    letter-spacing: -3px;
+  }
+
+  .market-card {
+    grid-template-columns: 1fr;
+  }
+
+  .odds {
+    gap: 28px;
+  }
+}
