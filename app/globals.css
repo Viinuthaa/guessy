@@ -265,6 +265,11 @@ button {
   gap: 30px;
   align-items: center;
   border-bottom: 1px solid #dcdad2;
+  transition: background 0.2s ease;
+}
+
+.market-card:hover {
+  background: #efeee8;
 }
 
 .market-question {
@@ -301,7 +306,8 @@ button {
   min-width: 55px;
 }
 
-.odds span {
+.odds span,
+.probability-row span {
   display: block;
   margin-bottom: 5px;
   color: #85847d;
@@ -331,6 +337,172 @@ button {
   font-size: 13px;
 }
 
+.detail-page {
+  min-height: 100vh;
+}
+
+.detail-navbar {
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding: 28px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.back-link {
+  color: #77766f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.back-link:hover {
+  color: #191918;
+}
+
+.market-detail {
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding: 95px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 100px;
+}
+
+.detail-main h1 {
+  max-width: 750px;
+  margin: 0;
+  font-size: clamp(44px, 6vw, 72px);
+  line-height: 1;
+  letter-spacing: -4px;
+}
+
+.detail-description {
+  max-width: 600px;
+  margin: 28px 0 12px;
+  color: #77766f;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.detail-closing {
+  margin: 0;
+  color: #85847d;
+  font-size: 13px;
+}
+
+.probability-section {
+  max-width: 700px;
+  margin-top: 75px;
+}
+
+.probability-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.probability-row strong {
+  font-size: 30px;
+}
+
+.probability-bar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #deddd6;
+}
+
+.probability-bar div {
+  height: 100%;
+  background: #191918;
+}
+
+.trade-panel {
+  align-self: start;
+  border-top: 1px solid #191918;
+  padding-top: 22px;
+}
+
+.trade-panel h2 {
+  margin: 0 0 28px;
+  font-size: 25px;
+  letter-spacing: -1px;
+}
+
+.balance {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 0;
+  border-top: 1px solid #dcdad2;
+  border-bottom: 1px solid #dcdad2;
+  color: #77766f;
+  font-size: 13px;
+}
+
+.balance strong {
+  color: #191918;
+}
+
+.trade-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.trade-option {
+  padding: 18px;
+  border: 1px solid #dcdad2;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+}
+
+.trade-option:hover {
+  border-color: #191918;
+}
+
+.trade-option span {
+  display: block;
+  margin-bottom: 8px;
+  color: #77766f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.trade-option strong {
+  font-size: 24px;
+}
+
+.trade-note {
+  margin: 18px 0 0;
+  color: #85847d;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.not-found {
+  width: min(1120px, calc(100% - 40px));
+  margin: auto;
+  padding: 120px 0;
+}
+
+.not-found h1 {
+  margin: 0;
+  font-size: 48px;
+  letter-spacing: -2px;
+}
+
+@media (max-width: 850px) {
+  .market-detail {
+    grid-template-columns: 1fr;
+    gap: 70px;
+  }
+}
+
 @media (max-width: 750px) {
   .navbar nav {
     gap: 18px;
@@ -352,7 +524,8 @@ button {
 }
 
 @media (max-width: 650px) {
-  .navbar {
+  .navbar,
+  .detail-navbar {
     align-items: flex-start;
   }
 
@@ -378,5 +551,13 @@ button {
 
   .odds {
     gap: 28px;
+  }
+
+  .market-detail {
+    padding: 65px 0;
+  }
+
+  .detail-main h1 {
+    letter-spacing: -3px;
   }
 }

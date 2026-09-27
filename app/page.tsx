@@ -1,8 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { FormEvent, useMemo, useState } from "react"
 
 type Market = {
+  id: string
   question: string
   description: string
   closes: string
@@ -12,6 +14,7 @@ type Market = {
 
 const initialMarkets: Market[] = [
   {
+    id: "rain-tomorrow",
     question: "Will it rain tomorrow?",
     description: "A simple weather prediction.",
     yes: 64,
@@ -19,6 +22,7 @@ const initialMarkets: Market[] = [
     closes: "Tomorrow",
   },
   {
+    id: "roommate-dishes",
     question: "Will my roommate do the dishes?",
     description: "The eternal roommate question.",
     yes: 28,
@@ -26,6 +30,7 @@ const initialMarkets: Market[] = [
     closes: "Today",
   },
   {
+    id: "lecture-cancelled",
     question: "Will the next lecture be cancelled?",
     description: "Predict before the announcement.",
     yes: 41,
@@ -55,8 +60,10 @@ export default function Home() {
 
       const matchesFilter =
         filter === "All" ||
-        (filter === "High confidence" && Math.max(market.yes, market.no) >= 60) ||
-        (filter === "Close calls" && Math.max(market.yes, market.no) < 60)
+        (filter === "High confidence" &&
+          Math.max(market.yes, market.no) >= 60) ||
+        (filter === "Close calls" &&
+          Math.max(market.yes, market.no) < 60)
 
       return matchesSearch && matchesFilter
     })
@@ -69,7 +76,14 @@ export default function Home() {
       return
     }
 
+    const id = question
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+
     const newMarket: Market = {
+      id,
       question: question.trim(),
       description: description.trim(),
       closes,
@@ -87,13 +101,14 @@ export default function Home() {
   return (
     <main>
       <header className="navbar">
-        <a className="logo" href="/">
+        <Link className="logo" href="/">
           guessy.
-        </a>
+        </Link>
 
         <nav>
           <a href="#markets">Markets</a>
           <a href="#about">How it works</a>
+
           <button
             className="nav-button"
             onClick={() => setShowForm((current) => !current)}
@@ -121,6 +136,7 @@ export default function Home() {
           className="primary-button"
           onClick={() => {
             setShowForm(true)
+
             document
               .getElementById("create")
               ?.scrollIntoView({ behavior: "smooth" })
@@ -162,7 +178,9 @@ export default function Home() {
               <textarea
                 placeholder="Add some context to your prediction..."
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(event) =>
+                  setDescription(event.target.value)
+                }
               />
             </label>
 
@@ -171,7 +189,9 @@ export default function Home() {
               <input
                 type="date"
                 value={closes}
-                onChange={(event) => setCloses(event.target.value)}
+                onChange={(event) =>
+                  setCloses(event.target.value)
+                }
               />
             </label>
 
@@ -204,24 +224,30 @@ export default function Home() {
           />
 
           <div className="filter-group">
-            {["All", "High confidence", "Close calls"].map((option) => (
-              <button
-                key={option}
-                className={`filter-button ${
-                  filter === option ? "active" : ""
-                }`}
-                onClick={() => setFilter(option)}
-              >
-                {option}
-              </button>
-            ))}
+            {["All", "High confidence", "Close calls"].map(
+              (option) => (
+                <button
+                  key={option}
+                  className={`filter-button ${
+                    filter === option ? "active" : ""
+                  }`}
+                  onClick={() => setFilter(option)}
+                >
+                  {option}
+                </button>
+              )
+            )}
           </div>
         </div>
 
         <div className="market-list">
           {filteredMarkets.length > 0 ? (
             filteredMarkets.map((market) => (
-              <article className="market-card" key={market.question}>
+              <Link
+                className="market-card"
+                href={`/market/${market.id}`}
+                key={market.id}
+              >
                 <div>
                   <p className="market-question">
                     {market.question}
@@ -247,7 +273,7 @@ export default function Home() {
                     <strong>{market.no}%</strong>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))
           ) : (
             <div className="empty-state">
