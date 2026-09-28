@@ -18,4 +18,15 @@ model Market {
   outcome     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  trades      Trade[]
+}
+
+model Trade {
+  id        String   @id @default(cuid())
+  marketId  String
+  side      String
+  amount    Float
+  price     Float
+  createdAt DateTime @default(now())
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
 }

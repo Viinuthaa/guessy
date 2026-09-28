@@ -2,68 +2,52 @@
 
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-const markets = [
-  {
-    id: "rain-tomorrow",
-    question: "Will it rain tomorrow?",
-    description: "A simple weather prediction.",
-    closes: "Tomorrow",
-    yes: 64,
-    no: 36,
-  },
-  {
-    id: "roommate-dishes",
-    question: "Will my roommate do the dishes?",
-    description: "The eternal roommate question.",
-    closes: "Today",
-    yes: 28,
-    no: 72,
-  },
-  {
-    id: "lecture-cancelled",
-    question: "Will the next lecture be cancelled?",
-    description: "Predict before the announcement.",
-    closes: "Friday",
-    yes: 41,
-    no: 59,
-  },
-]
+type Market = {
+  id: string
+  question: string
+  description: string | null
+  closesAt: string
+  yesPrice: number
+  noPrice: number
+}
 
 export default function MarketPage() {
   const params = useParams()
-  const market = markets.find((item) => item.id === params.id)
-
+  const [market, setMarket] = useState<Market | null>(null)
+  const [loading, setLoading] = useState(true)
   const [balance, setBalance] = useState(1000)
-  const [selectedSide, setSelectedSide] = useState<"YES" | "NO">("YES")
+  const [side, setSide] = useState<"YES" | "NO">("YES")
   const [amount, setAmount] = useState("")
-  const [position, setPosition] = useState({
-    YES: 0,
-    NO: 0,
-  })
-  const [prices, setPrices] = useState({
-    YES: market?.yes ?? 50,
-    NO: market?.no ?? 50,
-  })
+  const [position, setPosition] = useState({ YES: 0, NO: 0 })
+  const [prices, setPrices] = useState({ YES: 50, NO: 50 })
   const [message, setMessage] = useState("")
 
-  if (!market) {
-    return (
-      <main className="detail-page">
-        <Link className="back-link" href="/">
-          ← Back to markets
-        </Link>
+  useEffect(() => {
+    async function loadMarket() {
+      try {
+        const response = await fetch(
+          `http://localhost:4000/api/markets/${params.id}`
+        )
 
-        <div className="not-found">
-          <p className="eyebrow">MARKET NOT FOUND</p>
-          <h1>This market doesn't exist.</h1>
-        </div>
-      </main>
-    )
-  }
+        if (response.ok) {
+          const data = await response.json()
+          setMarket(data)
+          setPrices({
+            YES: data.yesPrice,
+            NO: data.noPrice,
+          })
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  function placeTrade() {
+    loadMarket()
+  }, [params.id])
+
+  async function placeTrade() {
     const points = Number(amount)
 
     if (!points || points <= 0) {
@@ -76,40 +60,72 @@ export default function MarketPage() {
       return
     }
 
-    const priceChange = Math.min(
-      8,
-      Math.max(1, Math.round(points / 50))
-    )
-
-    setBalance((current) => current - points)
-
-    setPosition((current) => ({
-      ...current,
-      [selectedSide]:
-        current[selectedSide] + points,
-    }))
-
-    setPrices((current) => {
-      const direction =
-        selectedSide === "YES" ? 1 : -1
-
-      const newYes = Math.max(
-        5,
-        Math.min(
-          95,
-          current.YES + direction * priceChange
-        )
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/markets/${params.id}/trades`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            side,
+            amount: points,
+            price: prices[side],
+          }),
+        }
       )
 
-      return {
-        YES: newYes,
-        NO: 100 - newYes,
+      if (!response.ok) {
+        throw new Error()
       }
-    })
 
-    setAmount("")
-    setMessage(
-      `You placed ${points} points on ${selectedSide}.`
+      const priceChange = Math.min(
+        8,
+        Math.max(1, Math.round(points / 50))
+      )
+
+      setBalance((value) => value - points)
+
+      setPosition((value) => ({
+        ...value,
+        [side]: value[side] + points,
+      }))
+
+      setPrices((value) => {
+        const direction = side === "YES" ? 1 : -1
+        const yes = Math.max(
+          5,
+          Math.min(95, value.YES + direction * priceChange)
+        )
+
+        return {
+          YES: yes,
+          NO: 100 - yes,
+        }
+      })
+
+      setAmount("")
+      setMessage(`You placed ${points} points on ${side}.`)
+    } catch {
+      setMessage("Couldn't place trade.")
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="not-found">
+        <p>Loading market...</p>
+      </main>
+    )
+  }
+
+  if (!market) {
+    return (
+      <main className="not-found">
+        <p className="eyebrow">MARKET NOT FOUND</p>
+        <h1>This market doesn't exist.</h1>
+      </main>
     )
   }
 
@@ -131,61 +147,51 @@ export default function MarketPage() {
 
           <h1>{market.question}</h1>
 
-          <p className="detail-description">
-            {market.description}
-          </p>
+          {market.description && (
+            <p className="detail-description">
+              {market.description}
+            </p>
+          )}
 
           <p className="detail-closing">
-            Closes {market.closes}
+            Closes {new Date(market.closesAt).toLocaleDateString()}
           </p>
 
           <div className="probability-section">
             <div className="probability-row">
               <div>
                 <span>YES</span>
-                <strong>{prices.YES}%</strong>
+                <strong>{Math.round(prices.YES)}%</strong>
               </div>
 
               <div>
                 <span>NO</span>
-                <strong>{prices.NO}%</strong>
+                <strong>{Math.round(prices.NO)}%</strong>
               </div>
             </div>
 
             <div className="probability-bar">
-              <div
-                style={{
-                  width: `${prices.YES}%`,
-                }}
-              />
+              <div style={{ width: `${prices.YES}%` }} />
             </div>
           </div>
 
           <div className="positions">
-            <p className="eyebrow">
-              YOUR POSITIONS
-            </p>
+            <p className="eyebrow">YOUR POSITIONS</p>
 
             <div className="position-row">
               <span>YES</span>
-              <strong>
-                {position.YES} pts
-              </strong>
+              <strong>{position.YES} pts</strong>
             </div>
 
             <div className="position-row">
               <span>NO</span>
-              <strong>
-                {position.NO} pts
-              </strong>
+              <strong>{position.NO} pts</strong>
             </div>
           </div>
         </div>
 
         <aside className="trade-panel">
-          <p className="eyebrow">
-            MAKE YOUR GUESS
-          </p>
+          <p className="eyebrow">MAKE YOUR GUESS</p>
 
           <h2>Where do you stand?</h2>
 
@@ -197,32 +203,28 @@ export default function MarketPage() {
           <div className="trade-options">
             <button
               className={`trade-option ${
-                selectedSide === "YES"
-                  ? "selected"
-                  : ""
+                side === "YES" ? "selected" : ""
               }`}
               onClick={() => {
-                setSelectedSide("YES")
+                setSide("YES")
                 setMessage("")
               }}
             >
               <span>YES</span>
-              <strong>{prices.YES}%</strong>
+              <strong>{Math.round(prices.YES)}%</strong>
             </button>
 
             <button
               className={`trade-option ${
-                selectedSide === "NO"
-                  ? "selected"
-                  : ""
+                side === "NO" ? "selected" : ""
               }`}
               onClick={() => {
-                setSelectedSide("NO")
+                setSide("NO")
                 setMessage("")
               }}
             >
               <span>NO</span>
-              <strong>{prices.NO}%</strong>
+              <strong>{Math.round(prices.NO)}%</strong>
             </button>
           </div>
 
@@ -245,19 +247,13 @@ export default function MarketPage() {
 
           <div className="trade-summary">
             <span>Selected</span>
-            <strong>{selectedSide}</strong>
+            <strong>{side}</strong>
 
             <span>Current probability</span>
-            <strong>
-              {prices[selectedSide]}%
-            </strong>
+            <strong>{Math.round(prices[side])}%</strong>
 
             <span>Amount</span>
-            <strong>
-              {amount
-                ? `${amount} pts`
-                : "—"}
-            </strong>
+            <strong>{amount ? `${amount} pts` : "—"}</strong>
           </div>
 
           <button
@@ -268,14 +264,11 @@ export default function MarketPage() {
           </button>
 
           {message && (
-            <p className="trade-message">
-              {message}
-            </p>
+            <p className="trade-message">{message}</p>
           )}
 
           <p className="trade-note">
-            Guessy uses virtual points. No real
-            money is involved.
+            Guessy uses virtual points. No real money is involved.
           </p>
         </aside>
       </section>

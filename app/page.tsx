@@ -1,288 +1,282 @@
 "use client"
 
 import Link from "next/link"
-import { FormEvent, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 type Market = {
   id: string
   question: string
-  description: string
-  closes: string
-  yes: number
-  no: number
+  description: string | null
+  closesAt: string
+  yesPrice: number
+  noPrice: number
 }
 
-const initialMarkets: Market[] = [
-  {
-    id: "rain-tomorrow",
-    question: "Will it rain tomorrow?",
-    description: "A simple weather prediction.",
-    yes: 64,
-    no: 36,
-    closes: "Tomorrow",
-  },
-  {
-    id: "roommate-dishes",
-    question: "Will my roommate do the dishes?",
-    description: "The eternal roommate question.",
-    yes: 28,
-    no: 72,
-    closes: "Today",
-  },
-  {
-    id: "lecture-cancelled",
-    question: "Will the next lecture be cancelled?",
-    description: "Predict before the announcement.",
-    yes: 41,
-    no: 59,
-    closes: "Friday",
-  },
-]
-
 export default function Home() {
-  const [markets, setMarkets] = useState(initialMarkets)
-  const [showForm, setShowForm] = useState(false)
+  const [markets, setMarkets] = useState<Market[]>([])
   const [search, setSearch] = useState("")
-  const [filter, setFilter] = useState("All")
+  const [filter, setFilter] = useState("all")
+  const [creating, setCreating] = useState(false)
   const [question, setQuestion] = useState("")
   const [description, setDescription] = useState("")
-  const [closes, setCloses] = useState("")
+  const [closesAt, setClosesAt] = useState("")
+  const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(true)
 
-  const filteredMarkets = useMemo(() => {
-    return markets.filter((market) => {
-      const matchesSearch =
-        market.question
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        market.description
-          .toLowerCase()
-          .includes(search.toLowerCase())
+  async function loadMarkets() {
+    try {
+      const response = await fetch("http://localhost:4000/api/markets")
+      const data = await response.json()
+      setMarkets(data)
+    } catch {
+      setMessage("Couldn't load markets.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      const matchesFilter =
-        filter === "All" ||
-        (filter === "High confidence" &&
-          Math.max(market.yes, market.no) >= 60) ||
-        (filter === "Close calls" &&
-          Math.max(market.yes, market.no) < 60)
+  useEffect(() => {
+    loadMarkets()
+  }, [])
 
-      return matchesSearch && matchesFilter
-    })
-  }, [markets, search, filter])
-
-  function createMarket(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (!question.trim() || !closes) {
+  async function createMarket() {
+    if (!question.trim() || !closesAt) {
+      setMessage("Add a question and closing date.")
       return
     }
 
-    const id = question
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
+    try {
+      const response = await fetch(
+        "http://localhost:4000/api/markets",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: question.trim(),
+            description: description.trim(),
+            closesAt: new Date(closesAt).toISOString(),
+          }),
+        }
+      )
 
-    const newMarket: Market = {
-      id,
-      question: question.trim(),
-      description: description.trim(),
-      closes,
-      yes: 50,
-      no: 50,
+      if (!response.ok) throw new Error()
+
+      const market = await response.json()
+
+      setMarkets((current) => [market, ...current])
+      setQuestion("")
+      setDescription("")
+      setClosesAt("")
+      setCreating(false)
+      setMessage("")
+    } catch {
+      setMessage("Couldn't create market.")
     }
-
-    setMarkets((current) => [newMarket, ...current])
-    setQuestion("")
-    setDescription("")
-    setCloses("")
-    setShowForm(false)
   }
 
+  const filteredMarkets = markets.filter((market) => {
+    const matchesSearch = market.question
+      .toLowerCase()
+      .includes(search.toLowerCase())
+
+    if (filter === "high") {
+      return matchesSearch && Math.max(market.yesPrice, market.noPrice) >= 65
+    }
+
+    if (filter === "close") {
+      return (
+        matchesSearch &&
+        Math.abs(market.yesPrice - market.noPrice) <= 20
+      )
+    }
+
+    return matchesSearch
+  })
+
   return (
-    <main>
-      <header className="navbar">
+    <>
+      <nav className="navbar">
         <Link className="logo" href="/">
           guessy.
         </Link>
 
         <nav>
           <a href="#markets">Markets</a>
-          <a href="#about">How it works</a>
-
-          <button
-            className="nav-button"
-            onClick={() => setShowForm((current) => !current)}
-          >
-            Create market
-          </button>
+          <a href="#markets">How it works</a>
         </nav>
-      </header>
+
+        <button
+          className="nav-button"
+          onClick={() => {
+            setCreating((value) => !value)
+            setMessage("")
+          }}
+        >
+          Create market
+        </button>
+      </nav>
 
       <section className="hero">
-        <p className="eyebrow">PREDICTION MARKET</p>
+        <p className="eyebrow">PREDICT THE OUTCOME</p>
 
         <h1>
-          What do you think
+          Make a guess.
           <br />
-          <span>will happen?</span>
+          Put your points
+          <br />
+          behind it.
         </h1>
 
         <p className="hero-text">
-          Make a guess, put your points behind it,
-          and see how the crowd thinks it will play out.
+          Guessy is a prediction market for the questions you
+          actually care about.
         </p>
-
-        <button
-          className="primary-button"
-          onClick={() => {
-            setShowForm(true)
-
-            document
-              .getElementById("create")
-              ?.scrollIntoView({ behavior: "smooth" })
-          }}
-        >
-          Create a market
-        </button>
       </section>
 
-      {showForm && (
-        <section className="create-section" id="create">
+      {creating && (
+        <section className="create-section">
           <div className="section-header">
             <div>
               <p className="eyebrow">NEW MARKET</p>
-              <h2>What are you predicting?</h2>
+              <h2>Create a market</h2>
             </div>
 
             <button
               className="close-button"
-              onClick={() => setShowForm(false)}
+              onClick={() => setCreating(false)}
             >
               Close
             </button>
           </div>
 
-          <form className="market-form" onSubmit={createMarket}>
+          <div className="market-form">
             <label>
               Question
               <input
-                type="text"
-                placeholder="Will our professor cancel tomorrow's lecture?"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
+                placeholder="Will it rain tomorrow?"
               />
             </label>
 
             <label>
               Description
               <textarea
-                placeholder="Add some context to your prediction..."
                 value={description}
-                onChange={(event) =>
-                  setDescription(event.target.value)
-                }
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Add some context..."
               />
             </label>
 
             <label>
-              Closes
+              Closing date
               <input
-                type="date"
-                value={closes}
-                onChange={(event) =>
-                  setCloses(event.target.value)
-                }
+                type="datetime-local"
+                value={closesAt}
+                onChange={(event) => setClosesAt(event.target.value)}
               />
             </label>
 
-            <button className="primary-button" type="submit">
+            <button className="primary-button" onClick={createMarket}>
               Create market
             </button>
-          </form>
+          </div>
         </section>
       )}
 
       <section className="markets" id="markets">
         <div className="section-header">
           <div>
-            <p className="eyebrow">EXPLORE</p>
-            <h2>Live markets</h2>
+            <p className="eyebrow">LIVE MARKETS</p>
+            <h2>What are people guessing?</h2>
           </div>
 
           <span className="market-count">
-            {filteredMarkets.length} of {markets.length}
+            {markets.length} markets
           </span>
         </div>
 
         <div className="market-controls">
           <input
             className="search-input"
-            type="search"
-            placeholder="Search markets..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search markets"
           />
 
           <div className="filter-group">
-            {["All", "High confidence", "Close calls"].map(
-              (option) => (
-                <button
-                  key={option}
-                  className={`filter-button ${
-                    filter === option ? "active" : ""
-                  }`}
-                  onClick={() => setFilter(option)}
-                >
-                  {option}
-                </button>
-              )
-            )}
+            {[
+              ["all", "All"],
+              ["high", "High confidence"],
+              ["close", "Close calls"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                className={`filter-button ${
+                  filter === value ? "active" : ""
+                }`}
+                onClick={() => setFilter(value)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="market-list">
-          {filteredMarkets.length > 0 ? (
-            filteredMarkets.map((market) => (
+        {loading ? (
+          <div className="empty-state">
+            <p>Loading markets...</p>
+          </div>
+        ) : filteredMarkets.length === 0 ? (
+          <div className="empty-state">
+            <p>No markets found.</p>
+            <span>Try creating one.</span>
+          </div>
+        ) : (
+          <div className="market-list">
+            {filteredMarkets.map((market) => (
               <Link
                 className="market-card"
                 href={`/market/${market.id}`}
                 key={market.id}
               >
                 <div>
-                  <p className="market-question">
+                  <h3 className="market-question">
                     {market.question}
-                  </p>
+                  </h3>
 
-                  <p className="market-description">
-                    {market.description}
-                  </p>
+                  {market.description && (
+                    <p className="market-description">
+                      {market.description}
+                    </p>
+                  )}
 
                   <p className="closing">
-                    Closes {market.closes}
+                    Closes{" "}
+                    {new Date(market.closesAt).toLocaleDateString()}
                   </p>
                 </div>
 
                 <div className="odds">
                   <div>
                     <span>YES</span>
-                    <strong>{market.yes}%</strong>
+                    <strong>{Math.round(market.yesPrice)}%</strong>
                   </div>
 
                   <div>
                     <span>NO</span>
-                    <strong>{market.no}%</strong>
+                    <strong>{Math.round(market.noPrice)}%</strong>
                   </div>
                 </div>
               </Link>
-            ))
-          ) : (
-            <div className="empty-state">
-              <p>No markets found.</p>
-              <span>Try a different search or filter.</span>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {message && <p className="trade-message">{message}</p>}
       </section>
-    </main>
+    </>
   )
 }

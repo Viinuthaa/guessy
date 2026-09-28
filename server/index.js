@@ -50,6 +50,28 @@ app.get("/api/markets", async (req, res) => {
   }
 })
 
+app.get("/api/markets/:id", async (req, res) => {
+  try {
+    const market = await prisma.market.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    })
+
+    if (!market) {
+      return res.status(404).json({
+        error: "Market not found",
+      })
+    }
+
+    res.json(market)
+  } catch {
+    res.status(500).json({
+      error: "Failed to fetch market",
+    })
+  }
+})
+
 app.post("/api/markets", async (req, res) => {
   try {
     const { question, description, closesAt } = req.body
@@ -72,6 +94,51 @@ app.post("/api/markets", async (req, res) => {
   } catch {
     res.status(500).json({
       error: "Failed to create market",
+    })
+  }
+})
+
+app.post("/api/markets/:id/trades", async (req, res) => {
+  try {
+    const { side, amount, price } = req.body
+
+    if (!["YES", "NO"].includes(side)) {
+      return res.status(400).json({
+        error: "Side must be YES or NO",
+      })
+    }
+
+    if (!amount || amount <= 0 || !price) {
+      return res.status(400).json({
+        error: "Valid amount and price are required",
+      })
+    }
+
+    const market = await prisma.market.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    })
+
+    if (!market) {
+      return res.status(404).json({
+        error: "Market not found",
+      })
+    }
+
+    const trade = await prisma.trade.create({
+      data: {
+        marketId: market.id,
+        side,
+        amount: Number(amount),
+        price: Number(price),
+      },
+    })
+
+    res.status(201).json(trade)
+  } catch {
+    res.status(500).json({
+      error: "Failed to record trade",
     })
   }
 })
