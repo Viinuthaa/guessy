@@ -1,32 +1,31 @@
 import "dotenv/config"
 import express from "express"
 import cors from "cors"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "../generated/prisma/client.ts"
 
 const app = express()
 const PORT = 4000
+const JWT_SECRET = process.env.JWT_SECRET
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
 })
 
-const prisma = new PrismaClient({
-  adapter,
-})
+const prisma = new PrismaClient({ adapter })
 
 app.use(cors())
 app.use(express.json())
 
 app.get("/api/health", async (req, res) => {
+  console.log("REGISTER ROUTE HIT")
   try {
     await prisma.$queryRaw`SELECT 1`
-
-    res.json({
-      status: "ok",
-      database: "connected",
-    })
-  } catch {
+    res.json({ status: "ok", database: "connected" })
+  } catch (error) {
+    console.error(error)
     res.status(500).json({
       status: "error",
       database: "disconnected",
@@ -34,111 +33,123 @@ app.get("/api/health", async (req, res) => {
   }
 })
 
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { username, password } = req.body
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: "Username and password are required",
+      })
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: "Password must be at least 6 characters",
+      })
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    })
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: "Username already exists",
+      })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+
+    const user = await prisma.user.create({
+      data: {
+        username,
+        passwordHash,
+      },
+    })
+
+    const token = jwt.sign(
+      { userId: user.id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    )
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        balance: user.balance,
+      },
+    })
+  } catch (error) {
+    console.error("REGISTER ERROR:", error)
+
+    res.status(500).json({
+      error: "Failed to create account",
+    })
+  }
+})
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+    })
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Invalid username or password",
+      })
+    }
+
+    const valid = await bcrypt.compare(
+      password,
+      user.passwordHash
+    )
+
+    if (!valid) {
+      return res.status(401).json({
+        error: "Invalid username or password",
+      })
+    }
+
+    const token = jwt.sign(
+      { userId: user.id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    )
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        balance: user.balance,
+      },
+    })
+  } catch (error) {
+    console.error("LOGIN ERROR:", error)
+
+    res.status(500).json({
+      error: "Failed to log in",
+    })
+  }
+})
+
 app.get("/api/markets", async (req, res) => {
   try {
     const markets = await prisma.market.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     })
 
     res.json(markets)
-  } catch {
+  } catch (error) {
+    console.error(error)
     res.status(500).json({
       error: "Failed to fetch markets",
-    })
-  }
-})
-
-app.get("/api/markets/:id", async (req, res) => {
-  try {
-    const market = await prisma.market.findUnique({
-      where: {
-        id: req.params.id,
-      },
-    })
-
-    if (!market) {
-      return res.status(404).json({
-        error: "Market not found",
-      })
-    }
-
-    res.json(market)
-  } catch {
-    res.status(500).json({
-      error: "Failed to fetch market",
-    })
-  }
-})
-
-app.post("/api/markets", async (req, res) => {
-  try {
-    const { question, description, closesAt } = req.body
-
-    if (!question || !closesAt) {
-      return res.status(400).json({
-        error: "Question and closing date are required",
-      })
-    }
-
-    const market = await prisma.market.create({
-      data: {
-        question,
-        description: description || null,
-        closesAt: new Date(closesAt),
-      },
-    })
-
-    res.status(201).json(market)
-  } catch {
-    res.status(500).json({
-      error: "Failed to create market",
-    })
-  }
-})
-
-app.post("/api/markets/:id/trades", async (req, res) => {
-  try {
-    const { side, amount, price } = req.body
-
-    if (!["YES", "NO"].includes(side)) {
-      return res.status(400).json({
-        error: "Side must be YES or NO",
-      })
-    }
-
-    if (!amount || amount <= 0 || !price) {
-      return res.status(400).json({
-        error: "Valid amount and price are required",
-      })
-    }
-
-    const market = await prisma.market.findUnique({
-      where: {
-        id: req.params.id,
-      },
-    })
-
-    if (!market) {
-      return res.status(404).json({
-        error: "Market not found",
-      })
-    }
-
-    const trade = await prisma.trade.create({
-      data: {
-        marketId: market.id,
-        side,
-        amount: Number(amount),
-        price: Number(price),
-      },
-    })
-
-    res.status(201).json(trade)
-  } catch {
-    res.status(500).json({
-      error: "Failed to record trade",
     })
   }
 })

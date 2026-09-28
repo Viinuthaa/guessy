@@ -637,3 +637,54 @@ button {
     letter-spacing: -3px;
   }
 }
+.auth-page {
+  width: min(500px, calc(100% - 40px));
+  margin: auto;
+  padding: 110px 0;
+}
+
+.auth-page h1 {
+  margin: 0 0 35px;
+  font-size: 64px;
+  letter-spacing: -3px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  color: #4f4e49;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  border: 1px solid #dcdad2;
+  border-radius: 7px;
+  padding: 13px;
+  outline: none;
+  background: #faf9f5;
+  color: #191918;
+}
+
+.auth-form input:focus {
+  border-color: #85847d;
+}
+
+.auth-switch {
+  margin-top: 20px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #77766f;
+  font-size: 12px;
+}
+
+.auth-switch:hover {
+  color: #191918;
+}

@@ -7,6 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  balance      Float    @default(1000)
+  createdAt    DateTime @default(now())
+  trades       Trade[]
+}
+
 model Market {
   id          String   @id @default(cuid())
   question    String
@@ -24,9 +33,11 @@ model Market {
 model Trade {
   id        String   @id @default(cuid())
   marketId  String
+  userId    String
   side      String
   amount    Float
   price     Float
   createdAt DateTime @default(now())
   market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
