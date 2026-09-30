@@ -16,141 +16,115 @@ type Market = {
 export default function MarketPage() {
   const params = useParams()
   const [market, setMarket] = useState<Market | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [balance, setBalance] = useState(1000)
+  const [balance, setBalance] = useState(0)
   const [side, setSide] = useState<"YES" | "NO">("YES")
   const [amount, setAmount] = useState("")
   const [position, setPosition] = useState({ YES: 0, NO: 0 })
-  const [prices, setPrices] = useState({ YES: 50, NO: 50 })
   const [message, setMessage] = useState("")
 
   useEffect(() => {
-    async function loadMarket() {
-      try {
-        const response = await fetch(
-          `http://localhost:4000/api/markets/${params.id}`
+    async function load() {
+      const token = localStorage.getItem("guessy_token")
+
+      const [marketResponse, userResponse] = await Promise.all([
+        fetch(`http://localhost:4000/api/markets/${params.id}`),
+        fetch("http://localhost:4000/api/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ])
+
+      if (marketResponse.ok) {
+        setMarket(await marketResponse.json())
+      }
+
+      if (userResponse.ok) {
+        const user = await userResponse.json()
+        setBalance(user.balance)
+
+        const trades = user.trades.filter(
+          (trade: { marketId: string }) => trade.marketId === params.id
         )
 
-        if (response.ok) {
-          const data = await response.json()
-          setMarket(data)
-          setPrices({
-            YES: data.yesPrice,
-            NO: data.noPrice,
-          })
-        }
-      } finally {
-        setLoading(false)
+        setPosition({
+          YES: trades
+            .filter((trade: { side: string }) => trade.side === "YES")
+            .reduce((sum: number, trade: { amount: number }) => sum + trade.amount, 0),
+          NO: trades
+            .filter((trade: { side: string }) => trade.side === "NO")
+            .reduce((sum: number, trade: { amount: number }) => sum + trade.amount, 0),
+        })
       }
     }
 
-    loadMarket()
+    load()
   }, [params.id])
 
   async function placeTrade() {
     const points = Number(amount)
+    const token = localStorage.getItem("guessy_token")
 
     if (!points || points <= 0) {
       setMessage("Enter a valid amount.")
       return
     }
 
-    if (points > balance) {
-      setMessage("You don't have enough points.")
+    const response = await fetch(
+      `http://localhost:4000/api/markets/${params.id}/trades`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ side, amount: points }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      setMessage(data.error)
       return
     }
 
-    try {
-      const response = await fetch(
-        `http://localhost:4000/api/markets/${params.id}/trades`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            side,
-            amount: points,
-            price: prices[side],
-          }),
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error()
-      }
-
-      const priceChange = Math.min(
-        8,
-        Math.max(1, Math.round(points / 50))
-      )
-
-      setBalance((value) => value - points)
-
-      setPosition((value) => ({
-        ...value,
-        [side]: value[side] + points,
-      }))
-
-      setPrices((value) => {
-        const direction = side === "YES" ? 1 : -1
-        const yes = Math.max(
-          5,
-          Math.min(95, value.YES + direction * priceChange)
-        )
-
-        return {
-          YES: yes,
-          NO: 100 - yes,
-        }
-      })
-
-      setAmount("")
-      setMessage(`You placed ${points} points on ${side}.`)
-    } catch {
-      setMessage("Couldn't place trade.")
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="not-found">
-        <p>Loading market...</p>
-      </main>
+    setBalance(data.balance)
+    setMarket(current =>
+      current
+        ? {
+            ...current,
+            yesPrice: data.yesPrice,
+            noPrice: data.noPrice,
+          }
+        : current
     )
+
+    setPosition(current => ({
+      ...current,
+      [side]: current[side] + points,
+    }))
+
+    setAmount("")
+    setMessage(`You placed ${points} points on ${side}.`)
   }
 
   if (!market) {
-    return (
-      <main className="not-found">
-        <p className="eyebrow">MARKET NOT FOUND</p>
-        <h1>This market doesn't exist.</h1>
-      </main>
-    )
+    return <main className="not-found">Loading market...</main>
   }
 
   return (
     <main className="detail-page">
       <header className="detail-navbar">
-        <Link className="logo" href="/">
-          guessy.
-        </Link>
-
-        <Link className="back-link" href="/">
-          ← Back to markets
-        </Link>
+        <Link className="logo" href="/">guessy.</Link>
+        <Link className="back-link" href="/">← Back to markets</Link>
       </header>
 
       <section className="market-detail">
         <div className="detail-main">
           <p className="eyebrow">LIVE MARKET</p>
-
           <h1>{market.question}</h1>
 
           {market.description && (
-            <p className="detail-description">
-              {market.description}
-            </p>
+            <p className="detail-description">{market.description}</p>
           )}
 
           <p className="detail-closing">
@@ -161,17 +135,17 @@ export default function MarketPage() {
             <div className="probability-row">
               <div>
                 <span>YES</span>
-                <strong>{Math.round(prices.YES)}%</strong>
+                <strong>{Math.round(market.yesPrice)}%</strong>
               </div>
 
               <div>
                 <span>NO</span>
-                <strong>{Math.round(prices.NO)}%</strong>
+                <strong>{Math.round(market.noPrice)}%</strong>
               </div>
             </div>
 
             <div className="probability-bar">
-              <div style={{ width: `${prices.YES}%` }} />
+              <div style={{ width: `${market.yesPrice}%` }} />
             </div>
           </div>
 
@@ -192,7 +166,6 @@ export default function MarketPage() {
 
         <aside className="trade-panel">
           <p className="eyebrow">MAKE YOUR GUESS</p>
-
           <h2>Where do you stand?</h2>
 
           <div className="balance">
@@ -201,60 +174,32 @@ export default function MarketPage() {
           </div>
 
           <div className="trade-options">
-            <button
-              className={`trade-option ${
-                side === "YES" ? "selected" : ""
-              }`}
-              onClick={() => {
-                setSide("YES")
-                setMessage("")
-              }}
-            >
-              <span>YES</span>
-              <strong>{Math.round(prices.YES)}%</strong>
-            </button>
-
-            <button
-              className={`trade-option ${
-                side === "NO" ? "selected" : ""
-              }`}
-              onClick={() => {
-                setSide("NO")
-                setMessage("")
-              }}
-            >
-              <span>NO</span>
-              <strong>{Math.round(prices.NO)}%</strong>
-            </button>
+            {(["YES", "NO"] as const).map(value => (
+              <button
+                key={value}
+                className={`trade-option ${side === value ? "selected" : ""}`}
+                onClick={() => setSide(value)}
+              >
+                <span>{value}</span>
+                <strong>
+                  {Math.round(
+                    value === "YES" ? market.yesPrice : market.noPrice
+                  )}%
+                </strong>
+              </button>
+            ))}
           </div>
 
           <label className="amount-label">
             Points
-
             <input
               className="amount-input"
               type="number"
-              min="1"
-              max={balance}
-              placeholder="100"
               value={amount}
-              onChange={(event) => {
-                setAmount(event.target.value)
-                setMessage("")
-              }}
+              onChange={event => setAmount(event.target.value)}
+              placeholder="100"
             />
           </label>
-
-          <div className="trade-summary">
-            <span>Selected</span>
-            <strong>{side}</strong>
-
-            <span>Current probability</span>
-            <strong>{Math.round(prices[side])}%</strong>
-
-            <span>Amount</span>
-            <strong>{amount ? `${amount} pts` : "—"}</strong>
-          </div>
 
           <button
             className="primary-button trade-button"
@@ -263,9 +208,7 @@ export default function MarketPage() {
             Place trade
           </button>
 
-          {message && (
-            <p className="trade-message">{message}</p>
-          )}
+          {message && <p className="trade-message">{message}</p>}
 
           <p className="trade-note">
             Guessy uses virtual points. No real money is involved.
