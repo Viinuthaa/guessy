@@ -30,8 +30,7 @@ function authenticate(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET)
-    req.userId = payload.userId
+    req.userId = jwt.verify(token, JWT_SECRET).userId
     next()
   } catch {
     res.status(401).json({ error: "Invalid or expired token" })
@@ -120,9 +119,7 @@ app.get("/api/me", authenticate, async (req, res) => {
     },
   })
 
-  if (!user) {
-    return res.status(404).json({ error: "User not found" })
-  }
+  if (!user) return res.status(404).json({ error: "User not found" })
 
   res.json({
     id: user.id,
@@ -133,11 +130,9 @@ app.get("/api/me", authenticate, async (req, res) => {
 })
 
 app.get("/api/markets", async (req, res) => {
-  const markets = await prisma.market.findMany({
+  res.json(await prisma.market.findMany({
     orderBy: { createdAt: "desc" },
-  })
-
-  res.json(markets)
+  }))
 })
 
 app.get("/api/markets/:id", async (req, res) => {
@@ -145,9 +140,7 @@ app.get("/api/markets/:id", async (req, res) => {
     where: { id: req.params.id },
   })
 
-  if (!market) {
-    return res.status(404).json({ error: "Market not found" })
-  }
+  if (!market) return res.status(404).json({ error: "Market not found" })
 
   res.json(market)
 })
@@ -189,20 +182,26 @@ app.post("/api/markets/:id/trades", authenticate, async (req, res) => {
         include: { trades: true },
       })
 
-      if (!user || !market) throw new Error("Trade unavailable")
-      if (user.balance < amount) throw new Error("Insufficient balance")
+      if (!user || !market || market.resolved) {
+        throw new Error("Trade unavailable")
+      }
 
-      const yesShares = market.trades
-        .filter(trade => trade.side === "YES")
-        .reduce((sum, trade) => sum + trade.amount, 0)
+      if (user.balance < amount) {
+        throw new Error("Insufficient balance")
+      }
 
-      const noShares = market.trades
-        .filter(trade => trade.side === "NO")
-        .reduce((sum, trade) => sum + trade.amount, 0)
+      const yes = market.trades
+        .filter(t => t.side === "YES")
+        .reduce((sum, t) => sum + t.amount, 0)
 
-      const nextYes = yesShares + (side === "YES" ? amount : 0)
-      const nextNo = noShares + (side === "NO" ? amount : 0)
-      const prices = marketPrices(nextYes, nextNo)
+      const no = market.trades
+        .filter(t => t.side === "NO")
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      const prices = marketPrices(
+        yes + (side === "YES" ? amount : 0),
+        no + (side === "NO" ? amount : 0)
+      )
 
       const trade = await tx.trade.create({
         data: {
@@ -232,6 +231,48 @@ app.post("/api/markets/:id/trades", authenticate, async (req, res) => {
     })
 
     res.status(201).json(result)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+app.post("/api/markets/:id/resolve", authenticate, async (req, res) => {
+  try {
+    const { outcome } = req.body
+
+    if (!["YES", "NO"].includes(outcome)) {
+      return res.status(400).json({ error: "Invalid outcome" })
+    }
+
+    const result = await prisma.$transaction(async tx => {
+      const market = await tx.market.findUnique({
+        where: { id: req.params.id },
+        include: { trades: true },
+      })
+
+      if (!market || market.resolved) {
+        throw new Error("Market cannot be resolved")
+      }
+
+      const winners = market.trades.filter(t => t.side === outcome)
+
+      for (const trade of winners) {
+        await tx.user.update({
+          where: { id: trade.userId },
+          data: { balance: { increment: trade.amount * 2 } },
+        })
+      }
+
+      return tx.market.update({
+        where: { id: market.id },
+        data: {
+          resolved: true,
+          outcome,
+        },
+      })
+    })
+
+    res.json(result)
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
