@@ -58,7 +58,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <p className="eyebrow">RECENT TRADES</p>
+        <p className="eyebrow">TRADE HISTORY</p>
 
         {user.trades.length === 0 ? (
           <p>No trades yet.</p>
