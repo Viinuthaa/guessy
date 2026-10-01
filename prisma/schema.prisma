@@ -17,17 +17,18 @@ model User {
 }
 
 model Market {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   question    String
   description String?
   closesAt    DateTime
-  yesPrice    Float    @default(50)
-  noPrice     Float    @default(50)
-  resolved    Boolean  @default(false)
+  yesPrice    Float         @default(50)
+  noPrice     Float         @default(50)
+  resolved    Boolean       @default(false)
   outcome     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   trades      Trade[]
+  prices      PriceHistory[]
 }
 
 model Trade {
@@ -40,4 +41,13 @@ model Trade {
   createdAt DateTime @default(now())
   market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PriceHistory {
+  id        String   @id @default(cuid())
+  marketId  String
+  yesPrice  Float
+  noPrice   Float
+  createdAt DateTime @default(now())
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
 }

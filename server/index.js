@@ -25,9 +25,7 @@ function authenticate(req, res, next) {
     ? req.headers.authorization.slice(7)
     : null
 
-  if (!token) {
-    return res.status(401).json({ error: "Authentication required" })
-  }
+  if (!token) return res.status(401).json({ error: "Authentication required" })
 
   try {
     req.userId = jwt.verify(token, JWT_SECRET).userId
@@ -145,6 +143,15 @@ app.get("/api/markets/:id", async (req, res) => {
   res.json(market)
 })
 
+app.get("/api/markets/:id/prices", async (req, res) => {
+  const prices = await prisma.priceHistory.findMany({
+    where: { marketId: req.params.id },
+    orderBy: { createdAt: "asc" },
+  })
+
+  res.json(prices)
+})
+
 app.post("/api/markets", async (req, res) => {
   try {
     const { question, description, closesAt } = req.body
@@ -223,6 +230,14 @@ app.post("/api/markets/:id/trades", authenticate, async (req, res) => {
         data: prices,
       })
 
+      await tx.priceHistory.create({
+        data: {
+          marketId: market.id,
+          yesPrice: prices.yesPrice,
+          noPrice: prices.noPrice,
+        },
+      })
+
       return {
         trade,
         balance: updatedUser.balance,
@@ -254,9 +269,7 @@ app.post("/api/markets/:id/resolve", authenticate, async (req, res) => {
         throw new Error("Market cannot be resolved")
       }
 
-      const winners = market.trades.filter(t => t.side === outcome)
-
-      for (const trade of winners) {
+      for (const trade of market.trades.filter(t => t.side === outcome)) {
         await tx.user.update({
           where: { id: trade.userId },
           data: { balance: { increment: trade.amount * 2 } },
@@ -265,10 +278,7 @@ app.post("/api/markets/:id/resolve", authenticate, async (req, res) => {
 
       return tx.market.update({
         where: { id: market.id },
-        data: {
-          resolved: true,
-          outcome,
-        },
+        data: { resolved: true, outcome },
       })
     })
 
