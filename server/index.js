@@ -25,7 +25,9 @@ function authenticate(req, res, next) {
     ? req.headers.authorization.slice(7)
     : null
 
-  if (!token) return res.status(401).json({ error: "Authentication required" })
+  if (!token) {
+    return res.status(401).json({ error: "Authentication required" })
+  }
 
   try {
     req.userId = jwt.verify(token, JWT_SECRET).userId
@@ -117,7 +119,9 @@ app.get("/api/me", authenticate, async (req, res) => {
     },
   })
 
-  if (!user) return res.status(404).json({ error: "User not found" })
+  if (!user) {
+    return res.status(404).json({ error: "User not found" })
+  }
 
   res.json({
     id: user.id,
@@ -125,6 +129,43 @@ app.get("/api/me", authenticate, async (req, res) => {
     balance: user.balance,
     trades: user.trades,
   })
+})
+
+app.get("/api/leaderboard", async (req, res) => {
+  const users = await prisma.user.findMany({
+    select: {
+      username: true,
+      trades: {
+        select: {
+          amount: true,
+          side: true,
+          market: {
+            select: {
+              resolved: true,
+              outcome: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const leaderboard = users
+    .map(user => ({
+      username: user.username,
+      points: user.trades.reduce((total, trade) => {
+        if (!trade.market.resolved) return total
+
+        return total + (
+          trade.side === trade.market.outcome
+            ? trade.amount
+            : -trade.amount
+        )
+      }, 0),
+    }))
+    .sort((a, b) => b.points - a.points)
+
+  res.json(leaderboard)
 })
 
 app.get("/api/markets", async (req, res) => {
@@ -138,7 +179,9 @@ app.get("/api/markets/:id", async (req, res) => {
     where: { id: req.params.id },
   })
 
-  if (!market) return res.status(404).json({ error: "Market not found" })
+  if (!market) {
+    return res.status(404).json({ error: "Market not found" })
+  }
 
   res.json(market)
 })
@@ -278,7 +321,10 @@ app.post("/api/markets/:id/resolve", authenticate, async (req, res) => {
 
       return tx.market.update({
         where: { id: market.id },
-        data: { resolved: true, outcome },
+        data: {
+          resolved: true,
+          outcome,
+        },
       })
     })
 
