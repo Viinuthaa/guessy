@@ -8,7 +8,7 @@ import { PrismaClient } from "../generated/prisma/client.ts"
 import { marketPrices } from "./pricing.js"
 
 const app = express()
-const PORT = 4000
+const PORT = process.env.PORT || 4000
 const JWT_SECRET = process.env.JWT_SECRET
 
 const adapter = new PrismaPg({
@@ -335,5 +335,5 @@ app.post("/api/markets/:id/resolve", authenticate, async (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`Guessy API running on http://localhost:${PORT}`)
+  console.log(`Guessy API running on port ${PORT}`)
 })
