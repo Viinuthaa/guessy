@@ -107,15 +107,21 @@ export default function Home() {
           <a href="#markets">How it works</a>
         </nav>
 
-        <button
-          className="nav-button"
-          onClick={() => {
-            setCreating(value => !value)
-            setMessage("")
-          }}
-        >
-          Create market
-        </button>
+        <div className="nav-actions">
+          <Link className="nav-link" href="/auth">
+            Sign in
+          </Link>
+
+          <button
+            className="nav-button"
+            onClick={() => {
+              setCreating(value => !value)
+              setMessage("")
+            }}
+          >
+            Create market
+          </button>
+        </div>
       </nav>
 
       <section className="hero">
