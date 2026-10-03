@@ -4,6 +4,9 @@ import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+
 export default function AuthPage() {
   const router = useRouter()
   const [login, setLogin] = useState(true)
@@ -21,7 +24,7 @@ export default function AuthPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:4000/api/auth/${endpoint}`,
+        `${API_URL}/api/auth/${endpoint}`,
         {
           method: "POST",
           headers: {
@@ -77,7 +80,7 @@ export default function AuthPage() {
             Username
             <input
               value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={event => setUsername(event.target.value)}
               placeholder="yourusername"
             />
           </label>
@@ -87,7 +90,7 @@ export default function AuthPage() {
             <input
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={event => setPassword(event.target.value)}
               placeholder="At least 6 characters"
             />
           </label>
@@ -104,7 +107,7 @@ export default function AuthPage() {
         <button
           className="auth-switch"
           onClick={() => {
-            setLogin((value) => !value)
+            setLogin(value => !value)
             setMessage("")
           }}
         >

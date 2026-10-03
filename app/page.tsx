@@ -3,6 +3,9 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+
 type Market = {
   id: string
   question: string
@@ -25,7 +28,7 @@ export default function Home() {
 
   async function loadMarkets() {
     try {
-      const response = await fetch("http://localhost:4000/api/markets")
+      const response = await fetch(`${API_URL}/api/markets`)
       const data = await response.json()
       setMarkets(data)
     } catch {
@@ -46,26 +49,23 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch(
-        "http://localhost:4000/api/markets",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            question: question.trim(),
-            description: description.trim(),
-            closesAt: new Date(closesAt).toISOString(),
-          }),
-        }
-      )
+      const response = await fetch(`${API_URL}/api/markets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: question.trim(),
+          description: description.trim(),
+          closesAt: new Date(closesAt).toISOString(),
+        }),
+      })
 
       if (!response.ok) throw new Error()
 
       const market = await response.json()
 
-      setMarkets((current) => [market, ...current])
+      setMarkets(current => [market, ...current])
       setQuestion("")
       setDescription("")
       setClosesAt("")
@@ -76,7 +76,7 @@ export default function Home() {
     }
   }
 
-  const filteredMarkets = markets.filter((market) => {
+  const filteredMarkets = markets.filter(market => {
     const matchesSearch = market.question
       .toLowerCase()
       .includes(search.toLowerCase())
@@ -110,7 +110,7 @@ export default function Home() {
         <button
           className="nav-button"
           onClick={() => {
-            setCreating((value) => !value)
+            setCreating(value => !value)
             setMessage("")
           }}
         >
@@ -156,7 +156,7 @@ export default function Home() {
               Question
               <input
                 value={question}
-                onChange={(event) => setQuestion(event.target.value)}
+                onChange={event => setQuestion(event.target.value)}
                 placeholder="Will it rain tomorrow?"
               />
             </label>
@@ -165,7 +165,7 @@ export default function Home() {
               Description
               <textarea
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={event => setDescription(event.target.value)}
                 placeholder="Add some context..."
               />
             </label>
@@ -175,7 +175,7 @@ export default function Home() {
               <input
                 type="datetime-local"
                 value={closesAt}
-                onChange={(event) => setClosesAt(event.target.value)}
+                onChange={event => setClosesAt(event.target.value)}
               />
             </label>
 
@@ -202,7 +202,7 @@ export default function Home() {
           <input
             className="search-input"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={event => setSearch(event.target.value)}
             placeholder="Search markets"
           />
 
@@ -236,7 +236,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="market-list">
-            {filteredMarkets.map((market) => (
+            {filteredMarkets.map(market => (
               <Link
                 className="market-card"
                 href={`/market/${market.id}`}

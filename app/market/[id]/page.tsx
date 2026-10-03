@@ -4,6 +4,9 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+
 type Market = {
   id: string
   question: string
@@ -27,8 +30,8 @@ export default function MarketPage() {
       const token = localStorage.getItem("guessy_token")
 
       const [marketResponse, userResponse] = await Promise.all([
-        fetch(`http://localhost:4000/api/markets/${params.id}`),
-        fetch("http://localhost:4000/api/me", {
+        fetch(`${API_URL}/api/markets/${params.id}`),
+        fetch(`${API_URL}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ])
@@ -42,16 +45,29 @@ export default function MarketPage() {
         setBalance(user.balance)
 
         const trades = user.trades.filter(
-          (trade: { marketId: string }) => trade.marketId === params.id
+          (trade: { marketId: string }) =>
+            trade.marketId === params.id
         )
 
         setPosition({
           YES: trades
-            .filter((trade: { side: string }) => trade.side === "YES")
-            .reduce((sum: number, trade: { amount: number }) => sum + trade.amount, 0),
+            .filter(
+              (trade: { side: string }) => trade.side === "YES"
+            )
+            .reduce(
+              (sum: number, trade: { amount: number }) =>
+                sum + trade.amount,
+              0
+            ),
           NO: trades
-            .filter((trade: { side: string }) => trade.side === "NO")
-            .reduce((sum: number, trade: { amount: number }) => sum + trade.amount, 0),
+            .filter(
+              (trade: { side: string }) => trade.side === "NO"
+            )
+            .reduce(
+              (sum: number, trade: { amount: number }) =>
+                sum + trade.amount,
+              0
+            ),
         })
       }
     }
@@ -69,7 +85,7 @@ export default function MarketPage() {
     }
 
     const response = await fetch(
-      `http://localhost:4000/api/markets/${params.id}/trades`,
+      `${API_URL}/api/markets/${params.id}/trades`,
       {
         method: "POST",
         headers: {
@@ -114,8 +130,13 @@ export default function MarketPage() {
   return (
     <main className="detail-page">
       <header className="detail-navbar">
-        <Link className="logo" href="/">guessy.</Link>
-        <Link className="back-link" href="/">← Back to markets</Link>
+        <Link className="logo" href="/">
+          guessy.
+        </Link>
+
+        <Link className="back-link" href="/">
+          ← Back to markets
+        </Link>
       </header>
 
       <section className="market-detail">
@@ -124,28 +145,39 @@ export default function MarketPage() {
           <h1>{market.question}</h1>
 
           {market.description && (
-            <p className="detail-description">{market.description}</p>
+            <p className="detail-description">
+              {market.description}
+            </p>
           )}
 
           <p className="detail-closing">
-            Closes {new Date(market.closesAt).toLocaleDateString()}
+            Closes{" "}
+            {new Date(market.closesAt).toLocaleDateString()}
           </p>
 
           <div className="probability-section">
             <div className="probability-row">
               <div>
                 <span>YES</span>
-                <strong>{Math.round(market.yesPrice)}%</strong>
+                <strong>
+                  {Math.round(market.yesPrice)}%
+                </strong>
               </div>
 
               <div>
                 <span>NO</span>
-                <strong>{Math.round(market.noPrice)}%</strong>
+                <strong>
+                  {Math.round(market.noPrice)}%
+                </strong>
               </div>
             </div>
 
             <div className="probability-bar">
-              <div style={{ width: `${market.yesPrice}%` }} />
+              <div
+                style={{
+                  width: `${market.yesPrice}%`,
+                }}
+              />
             </div>
           </div>
 
@@ -177,14 +209,20 @@ export default function MarketPage() {
             {(["YES", "NO"] as const).map(value => (
               <button
                 key={value}
-                className={`trade-option ${side === value ? "selected" : ""}`}
+                className={`trade-option ${
+                  side === value ? "selected" : ""
+                }`}
                 onClick={() => setSide(value)}
               >
                 <span>{value}</span>
+
                 <strong>
                   {Math.round(
-                    value === "YES" ? market.yesPrice : market.noPrice
-                  )}%
+                    value === "YES"
+                      ? market.yesPrice
+                      : market.noPrice
+                  )}
+                  %
                 </strong>
               </button>
             ))}
@@ -192,11 +230,14 @@ export default function MarketPage() {
 
           <label className="amount-label">
             Points
+
             <input
               className="amount-input"
               type="number"
               value={amount}
-              onChange={event => setAmount(event.target.value)}
+              onChange={event =>
+                setAmount(event.target.value)
+              }
               placeholder="100"
             />
           </label>
@@ -208,7 +249,9 @@ export default function MarketPage() {
             Place trade
           </button>
 
-          {message && <p className="trade-message">{message}</p>}
+          {message && (
+            <p className="trade-message">{message}</p>
+          )}
 
           <p className="trade-note">
             Guessy uses virtual points. No real money is involved.

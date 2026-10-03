@@ -3,6 +3,9 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+
 type User = {
   username: string
   balance: number
@@ -24,7 +27,7 @@ export default function Profile() {
   useEffect(() => {
     const token = localStorage.getItem("guessy_token")
 
-    fetch("http://localhost:4000/api/me", {
+    fetch(`${API_URL}/api/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -33,13 +36,20 @@ export default function Profile() {
       .then(setUser)
   }, [])
 
-  if (!user) return <main className="not-found">Loading...</main>
+  if (!user) {
+    return <main className="not-found">Loading...</main>
+  }
 
   return (
     <main className="detail-page">
       <header className="detail-navbar">
-        <Link className="logo" href="/">guessy.</Link>
-        <Link className="back-link" href="/">← Markets</Link>
+        <Link className="logo" href="/">
+          guessy.
+        </Link>
+
+        <Link className="back-link" href="/">
+          ← Markets
+        </Link>
       </header>
 
       <section className="auth-page">
@@ -66,7 +76,9 @@ export default function Profile() {
           user.trades.map(trade => (
             <div className="position-row" key={trade.id}>
               <span>{trade.market.question}</span>
-              <strong>{trade.side} · {trade.amount} pts</strong>
+              <strong>
+                {trade.side} · {trade.amount} pts
+              </strong>
             </div>
           ))
         )}
